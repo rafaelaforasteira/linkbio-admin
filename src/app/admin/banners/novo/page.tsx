@@ -1,0 +1,1 @@
+import{BannerForm}from"@/components/banner-form";import"../form.css";export default function NewBanner(){return <><div className="page-title"><div><h1 className="serif">Novo banner</h1><p>Adicione uma arte pronta e defina quando ela será exibida.</p></div></div><BannerForm/></>}
