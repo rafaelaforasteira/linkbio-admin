@@ -1,0 +1,117 @@
+.published-stat {
+  --stat-color: #31966a;
+}
+.scheduled-stat {
+  --stat-color: #d29b28;
+}
+.hidden-stat {
+  --stat-color: #8e7b88;
+}
+.ended-stat {
+  --stat-color: #aaa39d;
+}
+.section-head a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--brand-orange);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+.recent-list {
+  overflow: hidden;
+}
+.recent-list > a {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.recent-list > a:last-child {
+  border-bottom: 0;
+}
+.recent-list > a:hover {
+  background: #fdf9f5;
+}
+.recent-list img {
+  width: 90px;
+  aspect-ratio: 2.5/1;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.recent-list span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+}
+.recent-list small {
+  color: var(--muted);
+}
+.coming-soon {
+  padding: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.coming-soon > svg {
+  color: var(--brand-orange);
+}
+.coming-soon p {
+  max-width: 700px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 7px 0 0;
+}
+.settings-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+.setting-preview {
+  min-height: 150px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 15px;
+  align-content: start;
+}
+.setting-preview > svg {
+  width: 20px;
+  color: var(--brand-orange);
+}
+.setting-preview > div {
+  display: grid;
+  gap: 6px;
+}
+.setting-preview span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.setting-preview small {
+  grid-column: 1 / -1;
+  align-self: end;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+@media (max-width: 760px) {
+  .settings-preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 520px) {
+  .recent-list > a {
+    grid-template-columns: 70px 1fr;
+  }
+  .recent-list img {
+    width: 70px;
+  }
+  .recent-list > a > .status {
+    grid-column: 2;
+  }
+}

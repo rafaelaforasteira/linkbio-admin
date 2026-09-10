@@ -1,1 +1,19 @@
-export function BrandMark({compact=false}:{compact?:boolean}){return <div role="img" aria-label="Local reservado para o logo original Xingyu" style={{color:"var(--brand-orange)",fontSize:compact?".55rem":".62rem",fontWeight:700,letterSpacing:".12em",border:"1px dashed currentColor",borderRadius:6,padding:compact?"6px 8px":"8px 10px"}}>LOGO ORIGINAL</div>}
+export function BrandMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      role="img"
+      aria-label="Local reservado para o logo original Xingyu"
+      style={{
+        color: "var(--brand-orange)",
+        fontSize: compact ? ".55rem" : ".62rem",
+        fontWeight: 700,
+        letterSpacing: ".12em",
+        border: "1px dashed currentColor",
+        borderRadius: 6,
+        padding: compact ? "6px 8px" : "8px 10px",
+      }}
+    >
+      LOGO ORIGINAL
+    </div>
+  );
+}

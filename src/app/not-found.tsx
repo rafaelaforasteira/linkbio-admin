@@ -1,1 +1,27 @@
-import Link from"next/link";export default function NotFound(){return <main style={{minHeight:"100vh",display:"grid",placeItems:"center",textAlign:"center",padding:24}}><div><p style={{color:"var(--brand-orange)",fontWeight:700}}>404</p><h1 className="serif" style={{fontSize:"3rem",margin:"8px 0"}}>Página não encontrada</h1><p style={{color:"var(--muted)",marginBottom:24}}>O endereço acessado não existe ou foi removido.</p><Link className="button button-primary" href="/">Voltar ao início</Link></div></main>}
+import Link from "next/link";
+export default function NotFound() {
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        textAlign: "center",
+        padding: 24,
+      }}
+    >
+      <div>
+        <p style={{ color: "var(--brand-orange)", fontWeight: 700 }}>404</p>
+        <h1 className="serif" style={{ fontSize: "3rem", margin: "8px 0" }}>
+          Página não encontrada
+        </h1>
+        <p style={{ color: "var(--muted)", marginBottom: 24 }}>
+          O endereço acessado não existe ou foi removido.
+        </p>
+        <Link className="button button-primary" href="/">
+          Voltar ao início
+        </Link>
+      </div>
+    </main>
+  );
+}

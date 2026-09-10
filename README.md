@@ -20,10 +20,20 @@ npm run dev
 
 No Windows, crie `.env.local` manualmente a partir de `.env.example`. A aplicação fica em `http://localhost:3000`.
 
+### Preview local do Admin
+
+Enquanto o Supabase ainda não estiver configurado, o painel pode ser visualizado localmente adicionando ao `.env.local`:
+
+```env
+ADMIN_PREVIEW_MODE=true
+```
+
+Reinicie `npm run dev` depois de alterar a variável. Esse modo libera `/admin` e suas subrotas somente quando `NODE_ENV=development`. Para desativá-lo, use `ADMIN_PREVIEW_MODE=false` ou remova a variável. Mesmo que seja definida como `true` em produção, o bypass permanece desativado.
+
 ## Supabase
 
 1. Crie um projeto no Supabase.
-2. Execute `supabase/migrations/20260910000000_create_banners.sql` no SQL Editor, ou use `supabase db push` com o CLI vinculado.
+2. Execute, em ordem, todos os arquivos de `supabase/migrations/` no SQL Editor, ou use `supabase db push` com o CLI vinculado. A segunda migration adiciona a reordenação atômica dos banners.
 3. Confirme o bucket público `banners`. Upload, alteração e exclusão são restritos a usuários autenticados.
 4. Copie a URL do projeto e a anon/publishable key para `.env.local`:
 
@@ -46,7 +56,8 @@ No Dashboard do Supabase, abra **Authentication > Users > Add user** e crie manu
 - `src/app/admin/actions.ts`: mutações validadas no servidor
 - `src/components`: formulário e lista reutilizáveis
 - `src/lib/supabase`: clientes e renovação de sessão
-- `src/lib/banners.ts`: queries e regra central de status
+- `src/lib/banners.ts`: status, datas e validação de redirecionamento interno
+- `src/lib/banner-queries.ts`: consultas públicas e administrativas
 - `supabase/migrations`: schema, índices, RLS e Storage
 
 Datas do painel são interpretadas em `America/Sao_Paulo` e gravadas como `TIMESTAMPTZ`. A página pública usa renderização dinâmica para respeitar campanhas programadas.
@@ -64,6 +75,10 @@ npm run build
 ```
 
 Teste criando o admin, entrando em `/login`, enviando dois banners, alterando a ordem, ocultando/reativando e criando janelas futura e encerrada. Confira `/` após cada alteração.
+
+Rotas disponíveis: `/`, `/login`, `/admin`, `/admin/banners`, `/admin/banners/novo`, `/admin/banners/[id]`, `/admin/programacoes` e `/admin/configuracoes`.
+
+Sem as variáveis do Supabase, `/admin` falha fechado e volta para `/login`; a tela informa que a configuração está pendente. O parâmetro `next` só aceita caminhos internos iniciados por `/admin`.
 
 ## Deploy na Vercel
 

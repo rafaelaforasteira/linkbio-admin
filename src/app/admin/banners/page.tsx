@@ -1,2 +1,54 @@
-import Link from"next/link";import{ExternalLink,Plus}from"lucide-react";import{getAllBanners}from"@/lib/banner-queries";import{BannerList}from"@/components/banner-list";import"./banners.css";
-export default async function BannersPage(){const banners=await getAllBanners();return <><div className="page-title"><div><h1 className="serif">Banners</h1><p>Gerencie o conteúdo exibido na página da bio.</p></div><div className="page-actions"><Link className="button" href="/" target="_blank"><ExternalLink size={17}/>Ver página</Link><Link className="button button-primary" href="/admin/banners/novo"><Plus size={18}/>Novo banner</Link></div></div>{banners.length?<BannerList initial={banners}/>:<div className="empty card"><h2>Ainda não existem banners.</h2><p>Crie seu primeiro banner para começar a montar sua Link Bio.</p><Link className="button button-primary" href="/admin/banners/novo"><Plus size={18}/>Criar banner</Link></div>}</>}
+import { Suspense } from "react";
+import Link from "next/link";
+import { ExternalLink, Plus } from "lucide-react";
+import { getAllBanners } from "@/lib/banner-queries";
+import { BannerList } from "@/components/banner-list";
+import { SavedFeedback } from "@/components/saved-feedback";
+import { hasSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
+import { getAdminPreviewBanners } from "@/lib/admin-preview-banners";
+import "./banners.css";
+
+export default async function BannersPage() {
+  const mockMode = isAdminPreviewMode() && !hasSupabaseEnv();
+  const banners = mockMode ? getAdminPreviewBanners() : await getAllBanners();
+  return (
+    <>
+      <Suspense>
+        <SavedFeedback />
+      </Suspense>
+      <div className="page-title">
+        <div>
+          <h1 className="serif">Banners</h1>
+          <p>Gerencie tudo que aparece na sua Link Bio.</p>
+        </div>
+        <div className="page-actions">
+          <Link
+            className="button"
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink size={17} />
+            Ver página
+          </Link>
+          <Link className="button button-primary" href="/admin/banners/novo">
+            <Plus size={18} />
+            Novo banner
+          </Link>
+        </div>
+      </div>
+      {banners.length ? (
+        <BannerList initial={banners} mockMode={mockMode} />
+      ) : (
+        <div className="empty card">
+          <h2>Ainda não existem banners.</h2>
+          <p>Crie seu primeiro banner para começar a montar sua Link Bio.</p>
+          <Link className="button button-primary" href="/admin/banners/novo">
+            <Plus size={18} />
+            Criar banner
+          </Link>
+        </div>
+      )}
+    </>
+  );
+}
