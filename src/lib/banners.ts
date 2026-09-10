@@ -19,7 +19,7 @@ export function formatDate(value: string | null) {
 }
 
 export function safeAdminPath(value: string | null) {
-  if (!value || !value.startsWith("/admin")) return "/admin";
+  if (!value || !/^\/admin(?:\/|\?|$)/.test(value)) return "/admin";
   if (value.startsWith("//") || value.includes(":") || value.includes("\\"))
     return "/admin";
   return value;

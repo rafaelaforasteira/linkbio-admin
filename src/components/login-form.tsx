@@ -1,67 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { Eye, EyeOff, LoaderCircle, LockKeyhole } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/browser";
-import { safeAdminPath } from "@/lib/banners";
+import { useSearchParams } from "next/navigation";
+import { login } from "@/app/login/actions";
 
 export function LoginForm({ configured }: { configured: boolean }) {
   const [show, setShow] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const router = useRouter();
   const params = useSearchParams();
-
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setLoading(true);
-    const data = new FormData(event.currentTarget);
-    try {
-      const { error: authError } = await createClient().auth.signInWithPassword(
-        {
-          email: String(data.get("email")),
-          password: String(data.get("password")),
-        },
-      );
-      if (authError) {
-        setError("E-mail ou senha incorretos.");
-        return;
-      }
-      router.replace(safeAdminPath(params.get("next")));
-      router.refresh();
-    } catch {
-      setError(
-        "Não foi possível entrar. Verifique a configuração e tente novamente.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [state, formAction, pending] = useActionState(login, { error: "" });
 
   return (
-    <form className="login-form" onSubmit={submit}>
+    <form className="login-form" action={formAction}>
+      <input type="hidden" name="next" value={params.get("next") || "/admin"} />
       <div className="secure-label">
         <LockKeyhole size={14} /> Área interna protegida
       </div>
       <div>
-        <label className="label" htmlFor="email">
-          E-mail
-        </label>
-        <input
-          className="field"
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          disabled={!configured || loading}
-        />
-      </div>
-      <div>
         <label className="label" htmlFor="password">
-          Senha
+          Senha administrativa
         </label>
         <div className="password-wrap">
           <input
@@ -71,7 +28,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
             type={show ? "text" : "password"}
             autoComplete="current-password"
             required
-            disabled={!configured || loading}
+            disabled={!configured || pending}
           />
           <button
             type="button"
@@ -83,16 +40,16 @@ export function LoginForm({ configured }: { configured: boolean }) {
           </button>
         </div>
       </div>
-      {error && (
+      {state.error && (
         <p role="alert" className="form-error">
-          {error}
+          {state.error}
         </p>
       )}
       <button
         className="button button-primary"
-        disabled={!configured || loading}
+        disabled={!configured || pending}
       >
-        {loading ? (
+        {pending ? (
           <>
             <LoaderCircle className="animate-spin" size={18} />
             Entrando...

@@ -3,14 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { fromZonedTime } from "date-fns-tz";
-import { createClient } from "@/lib/supabase/server";
+import { clearAdminSession, requireAdminSession } from "@/lib/admin-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { bannerSchema } from "@/lib/validation";
 
 async function adminClient() {
-  const client = await createClient();
-  const { data } = await client.auth.getUser();
-  if (!data.user) throw new Error("Sua sessão expirou. Entre novamente.");
-  return client;
+  await requireAdminSession();
+  return createAdminClient();
 }
 
 const text = (data: FormData, key: string) =>
@@ -26,6 +25,7 @@ function refreshBannerPages() {
 }
 
 export async function saveBanner(data: FormData) {
+  const supabase = await adminClient();
   const id = text(data, "id");
   const oldImageUrl = text(data, "existing_image_url");
   const oldImagePath = text(data, "existing_image_path") || null;
@@ -41,7 +41,6 @@ export async function saveBanner(data: FormData) {
   if (!parsed.success)
     throw new Error(parsed.error.issues[0]?.message || "Revise os campos.");
 
-  const supabase = await adminClient();
   let imageUrl = oldImageUrl;
   let imagePath = oldImagePath;
   let uploadedPath: string | null = null;
@@ -125,7 +124,9 @@ export async function saveBanner(data: FormData) {
 }
 
 export async function toggleBanner(id: string, enabled: boolean) {
-  const { error } = await (await adminClient())
+  const { error } = await (
+    await adminClient()
+  )
     .from("banners")
     .update({ enabled })
     .eq("id", id)
@@ -153,20 +154,20 @@ export async function duplicateBanner(id: string) {
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const result = await supabase
-    .from("banners")
-    .insert({
-      ...data,
-      internal_name: `${data.internal_name} — cópia`,
-      enabled: false,
-      sort_order: (last?.sort_order ?? -1) + 1,
-    });
+  const result = await supabase.from("banners").insert({
+    ...data,
+    internal_name: `${data.internal_name} — cópia`,
+    enabled: false,
+    sort_order: (last?.sort_order ?? -1) + 1,
+  });
   if (result.error) throw new Error("Não foi possível duplicar o banner.");
   refreshBannerPages();
 }
 
 export async function deleteBanner(id: string) {
-  const { error } = await (await adminClient())
+  const { error } = await (
+    await adminClient()
+  )
     .from("banners")
     .update({ deleted_at: new Date().toISOString(), enabled: false })
     .eq("id", id);
@@ -175,17 +176,15 @@ export async function deleteBanner(id: string) {
 }
 
 export async function reorderBanners(ids: string[]) {
+  const supabase = await adminClient();
   if (!ids.length || new Set(ids).size !== ids.length)
     throw new Error("A ordem enviada é inválida.");
-  const { error } = await (
-    await adminClient()
-  ).rpc("reorder_banners", { banner_ids: ids });
+  const { error } = await supabase.rpc("reorder_banners", { banner_ids: ids });
   if (error) throw new Error("Não foi possível salvar a nova ordem.");
   refreshBannerPages();
 }
 
 export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  await clearAdminSession();
   redirect("/login");
 }

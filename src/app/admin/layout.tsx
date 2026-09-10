@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
 import { AdminShell } from "@/components/admin-shell";
+import { requireAdminSession } from "@/lib/admin-auth";
 import { isAdminPreviewMode } from "@/lib/env";
 import "./admin.css";
 
@@ -14,14 +14,13 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await requireAdminSession();
   const previewMode = isAdminPreviewMode();
-  const email = previewMode
-    ? "Preview local"
-    : (await (await createClient()).auth.getUser()).data.user?.email ||
-      "Conta autenticada";
-
   return (
-    <AdminShell email={email} previewMode={previewMode}>
+    <AdminShell
+      accessLabel={previewMode ? "Preview local" : "Acesso interno"}
+      previewMode={previewMode}
+    >
       {children}
     </AdminShell>
   );

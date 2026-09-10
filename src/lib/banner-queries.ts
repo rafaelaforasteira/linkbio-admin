@@ -1,9 +1,12 @@
 import type { Banner } from "@/types/banner";
-import { createClient } from "@/lib/supabase/server";
-import { hasSupabaseEnv } from "@/lib/env";
+import { requireAdminSession } from "@/lib/admin-auth";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createPublicClient } from "@/lib/supabase/public";
+import { hasPublicSupabaseEnv } from "@/lib/env";
+
 export async function getAllBanners(): Promise<Banner[]> {
-  if (!hasSupabaseEnv()) return [];
-  const { data, error } = await (await createClient())
+  await requireAdminSession();
+  const { data, error } = await createAdminClient()
     .from("banners")
     .select("*")
     .is("deleted_at", null)
@@ -11,10 +14,11 @@ export async function getAllBanners(): Promise<Banner[]> {
   if (error) throw new Error("Não foi possível carregar os banners.");
   return (data ?? []) as Banner[];
 }
+
 export async function getPublicBanners(): Promise<Banner[]> {
-  if (!hasSupabaseEnv()) return [];
+  if (!hasPublicSupabaseEnv()) return [];
   const now = new Date().toISOString();
-  const { data, error } = await (await createClient())
+  const { data, error } = await createPublicClient()
     .from("banners")
     .select("*")
     .eq("enabled", true)

@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
 import { getAllBanners } from "@/lib/banner-queries";
+import { getAdminPreviewBanners } from "@/lib/admin-preview-banners";
+import { hasAdminSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
 import { bannerStatus, formatDate } from "@/lib/banners";
 import "../banners/banners.css";
 
 export default async function SchedulesPage() {
-  const items = (await getAllBanners())
+  const mockMode = isAdminPreviewMode() && !hasAdminSupabaseEnv();
+  const banners = mockMode ? getAdminPreviewBanners() : await getAllBanners();
+  const items = banners
     .filter((banner) => bannerStatus(banner) === "scheduled")
     .sort(
       (a, b) =>

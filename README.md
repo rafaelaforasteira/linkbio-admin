@@ -1,16 +1,16 @@
 # Link Bio Admin — Xingyu
 
-CMS de banners para a Link Bio da Xingyu. A página pública lê apenas campanhas habilitadas e dentro da janela de publicação; o painel autenticado permite criar, editar, duplicar, ocultar, programar, excluir logicamente e reordenar banners.
+CMS interno de banners para a Link Bio da Xingyu. A página pública lê campanhas visíveis com a chave pública do Supabase; o painel usa uma única senha administrativa, sessão assinada e operações server-side com service role.
 
 ## Stack
 
-- Next.js 16 (App Router), React 19 e TypeScript
-- Supabase Auth, PostgreSQL e Storage
-- React Hook Form + Zod, dnd-kit e Lucide
+- Next.js 16, React 19 e TypeScript
+- Supabase PostgreSQL e Storage (sem Supabase Auth)
+- React Hook Form, Zod, dnd-kit e bcryptjs
 
 ## Instalação
 
-Requer Node.js 20.9 ou superior e um projeto no Supabase.
+Requer Node.js 20.9 ou superior e um projeto Supabase.
 
 ```bash
 npm install
@@ -20,51 +20,102 @@ npm run dev
 
 No Windows, crie `.env.local` manualmente a partir de `.env.example`. A aplicação fica em `http://localhost:3000`.
 
-### Preview local do Admin
+## Configuração do Supabase
 
-Enquanto o Supabase ainda não estiver configurado, o painel pode ser visualizado localmente adicionando ao `.env.local`:
+1. Crie o projeto no Supabase.
+2. Execute em ordem todos os arquivos de `supabase/migrations/` pelo SQL Editor ou com `supabase db push`.
+3. Confirme que o bucket público `banners` foi criado.
+4. Obtenha a URL, a anon/publishable key e a service role key nas configurações da API.
+
+A anon key é usada somente na leitura pública. A service role permanece no servidor e só é utilizada depois da validação da sessão administrativa.
+
+## Configuração da senha administrativa
+
+Gere o hash em um terminal interativo. A senha fica oculta, é confirmada e não é gravada em arquivos:
+
+```bash
+npm run admin:hash
+```
+
+Copie somente a linha `ADMIN_PASSWORD_HASH=...` para `.env.local`. O hash usa bcrypt com custo 12; a senha em texto puro não é armazenada.
+
+Gere um segredo independente, com pelo menos 32 bytes de entropia:
+
+```bash
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Use o resultado como `ADMIN_SESSION_SECRET`. Não reutilize a senha administrativa como segredo da sessão.
+
+## `.env.local`
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+ADMIN_PASSWORD_HASH=
+ADMIN_SESSION_SECRET=
+
+ADMIN_PREVIEW_MODE=false
+```
+
+Nunca use prefixo `NEXT_PUBLIC_` em `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_PASSWORD_HASH` ou `ADMIN_SESSION_SECRET`. `.env.local` é ignorado pelo Git.
+
+## Autenticação e sessão
+
+`/login` envia apenas a senha para uma Server Action. O servidor compara a senha com `ADMIN_PASSWORD_HASH` usando bcrypt. Quando válida, cria o cookie `xingyu_admin_session`, contendo somente um payload de versão e expiração assinado com HMAC SHA-256.
+
+O cookie é `HttpOnly`, `SameSite=Lax`, `Path=/`, possui validade de 7 dias e recebe `Secure` em produção. O proxy verifica assinatura, versão e expiração em toda navegação para `/admin`; as Server Actions repetem a validação antes de usar a service role. Configuração ausente ou cookie inválido falham fechados.
+
+O botão **Sair** invalida o cookie e redireciona para `/login`. O parâmetro `next` aceita somente caminhos internos iniciados por `/admin`.
+
+Há um limite em memória de 8 tentativas por IP a cada 10 minutos. Em uma VPS com múltiplos processos, configure também rate limiting no Nginx para `/login`, por exemplo com `limit_req_zone` e `limit_req`. A camada de proxy deve encaminhar corretamente `X-Forwarded-For` e sobrescrever cabeçalhos recebidos diretamente do cliente.
+
+## Preview local
+
+Para visualizar o painel sem serviços reais:
 
 ```env
 ADMIN_PREVIEW_MODE=true
 ```
 
-Reinicie `npm run dev` depois de alterar a variável. Esse modo libera `/admin` e suas subrotas somente quando `NODE_ENV=development`. Para desativá-lo, use `ADMIN_PREVIEW_MODE=false` ou remova a variável. Mesmo que seja definida como `true` em produção, o bypass permanece desativado.
+O bypass só funciona quando `NODE_ENV=development`. Em produção, mesmo com a variável igual a `true`, a sessão continua obrigatória. Quando a service role não está configurada, `/admin`, `/admin/banners` e `/admin/programacoes` usam os mesmos banners demonstrativos locais; eles nunca aparecem na página pública nem são persistidos.
 
-## Supabase
+## Produção na VPS
 
-1. Crie um projeto no Supabase.
-2. Execute, em ordem, todos os arquivos de `supabase/migrations/` no SQL Editor, ou use `supabase db push` com o CLI vinculado. A segunda migration adiciona a reordenação atômica dos banners.
-3. Confirme o bucket público `banners`. Upload, alteração e exclusão são restritos a usuários autenticados.
-4. Copie a URL do projeto e a anon/publishable key para `.env.local`:
+Configure as variáveis no ambiente do processo, nunca no repositório:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICA
+NODE_ENV=production
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+ADMIN_PASSWORD_HASH=
+ADMIN_SESSION_SECRET=
+ADMIN_PREVIEW_MODE=false
 ```
 
-Não é utilizada service role key.
+Depois, execute migrations, instale dependências, gere o build e reinicie o processo:
 
-## Primeiro administrador
+```bash
+npm ci
+npm run build
+npm start
+```
 
-No Dashboard do Supabase, abra **Authentication > Users > Add user** e crie manualmente o usuário com e-mail e senha. Não há cadastro público. Toda conta Auth criada administrativamente tem acesso ao painel nesta V1; uma tabela explícita de papéis pode ser adicionada quando houver outros tipos de usuário.
+Use HTTPS no Nginx, encaminhe `Host`, `X-Real-IP` e `X-Forwarded-For`, e aplique limite de requisições em `/login`. Se `ADMIN_PASSWORD_HASH` ou `ADMIN_SESSION_SECRET` estiver ausente, o painel não será liberado. Se `SUPABASE_SERVICE_ROLE_KEY` estiver ausente, operações administrativas não serão executadas.
 
 ## Arquitetura
 
-- `src/app/page.tsx`: Link Bio pública dinâmica
-- `src/app/login`: acesso administrativo
-- `src/app/admin`: dashboard e rotas protegidas
-- `src/app/admin/actions.ts`: mutações validadas no servidor
-- `src/components`: formulário e lista reutilizáveis
-- `src/lib/supabase`: clientes e renovação de sessão
-- `src/lib/banners.ts`: status, datas e validação de redirecionamento interno
-- `src/lib/banner-queries.ts`: consultas públicas e administrativas
-- `supabase/migrations`: schema, índices, RLS e Storage
-
-Datas do painel são interpretadas em `America/Sao_Paulo` e gravadas como `TIMESTAMPTZ`. A página pública usa renderização dinâmica para respeitar campanhas programadas.
-
-## Assets
-
-O repositório recebido não continha o logo original nem banners finais. Substitua o componente provisório `src/components/brand-mark.tsx` pelo asset oficial quando ele for fornecido, preferencialmente em `public/brand/`. As artes são enviadas completas pelo painel e nunca reconstruídas em HTML.
+- `src/lib/admin-session.ts`: token HMAC compatível com Proxy/Web Crypto
+- `src/lib/admin-auth.ts`: leitura, criação, exigência e remoção da sessão no servidor
+- `src/lib/supabase/public.ts`: cliente anônimo para a Link Bio pública
+- `src/lib/supabase/admin.ts`: cliente service role exclusivo do servidor
+- `src/app/login/actions.ts`: comparação bcrypt e rate limit de login
+- `src/app/admin/actions.ts`: mutações protegidas e uploads server-side
+- `src/lib/banner-queries.ts`: consultas públicas e administrativas separadas
+- `supabase/migrations`: schema, RLS, Storage e RPC de reordenação
 
 ## Verificação
 
@@ -74,16 +125,4 @@ npm run typecheck
 npm run build
 ```
 
-Teste criando o admin, entrando em `/login`, enviando dois banners, alterando a ordem, ocultando/reativando e criando janelas futura e encerrada. Confira `/` após cada alteração.
-
-Rotas disponíveis: `/`, `/login`, `/admin`, `/admin/banners`, `/admin/banners/novo`, `/admin/banners/[id]`, `/admin/programacoes` e `/admin/configuracoes`.
-
-Sem as variáveis do Supabase, `/admin` falha fechado e volta para `/login`; a tela informa que a configuração está pendente. O parâmetro `next` só aceita caminhos internos iniciados por `/admin`.
-
-## Deploy na Vercel
-
-Importe o repositório na Vercel, configure as duas variáveis em **Project Settings > Environment Variables** e publique. Adicione a URL de produção nas URLs permitidas do Supabase Auth.
-
-## V2
-
-Configuração institucional pelo painel, papéis granulares, recuperação de senha, analytics/UTM, histórico de versões e limpeza automática de arquivos órfãos.
+Rotas: `/`, `/login`, `/admin`, `/admin/banners`, `/admin/banners/novo`, `/admin/banners/[id]`, `/admin/programacoes` e `/admin/configuracoes`.

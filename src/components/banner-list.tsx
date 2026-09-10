@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -133,12 +134,14 @@ function BannerRow({
   dragEnabled,
   mockMode,
   onMockAction,
+  onRestore,
 }: {
   banner: Banner;
   index: number;
   dragEnabled: boolean;
   mockMode: boolean;
   onMockAction: (action: RowAction, banner: Banner) => void;
+  onRestore: () => void;
 }) {
   const {
     attributes,
@@ -151,6 +154,7 @@ function BannerRow({
   const [pending, startTransition] = useTransition();
   const [menu, setMenu] = useState(false);
   const [dialog, setDialog] = useState<"delete" | "preview" | null>(null);
+  const router = useRouter();
   const status = bannerStatus(banner);
 
   function run(action: RowAction, task: () => Promise<void>, message: string) {
@@ -161,13 +165,17 @@ function BannerRow({
       toast.success(message);
       return;
     }
+    onMockAction(action, banner);
     startTransition(async () => {
       try {
         await task();
+        router.refresh();
         toast.success(message);
         setMenu(false);
         setDialog(null);
       } catch (error) {
+        onRestore();
+        router.refresh();
         toast.error(
           error instanceof Error ? error.message : "Não foi possível concluir.",
         );
@@ -464,6 +472,7 @@ export function BannerList({
                 dragEnabled={dragEnabled}
                 mockMode={mockMode}
                 onMockAction={mockAction}
+                onRestore={() => setItems(initial)}
               />
             ))}
             {!visible.length && (

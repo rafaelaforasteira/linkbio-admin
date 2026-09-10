@@ -4,12 +4,12 @@ import { ExternalLink, Plus } from "lucide-react";
 import { getAllBanners } from "@/lib/banner-queries";
 import { BannerList } from "@/components/banner-list";
 import { SavedFeedback } from "@/components/saved-feedback";
-import { hasSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
+import { hasAdminSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
 import { getAdminPreviewBanners } from "@/lib/admin-preview-banners";
 import "./banners.css";
 
 export default async function BannersPage() {
-  const mockMode = isAdminPreviewMode() && !hasSupabaseEnv();
+  const mockMode = isAdminPreviewMode() && !hasAdminSupabaseEnv();
   const banners = mockMode ? getAdminPreviewBanners() : await getAllBanners();
   return (
     <>
@@ -38,7 +38,13 @@ export default async function BannersPage() {
         </div>
       </div>
       {banners.length ? (
-        <BannerList initial={banners} mockMode={mockMode} />
+        <BannerList
+          key={banners
+            .map((banner) => `${banner.id}:${banner.updated_at}`)
+            .join("|")}
+          initial={banners}
+          mockMode={mockMode}
+        />
       ) : (
         <div className="empty card">
           <h2>Ainda não existem banners.</h2>

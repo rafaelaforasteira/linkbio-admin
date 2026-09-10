@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Plus } from "lucide-react";
 import { getAllBanners } from "@/lib/banner-queries";
+import { getAdminPreviewBanners } from "@/lib/admin-preview-banners";
+import { hasAdminSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
 import { bannerStatus, formatDate } from "@/lib/banners";
 import "./dashboard.css";
 
@@ -12,7 +14,8 @@ const statusLabels = {
 };
 
 export default async function Dashboard() {
-  const banners = await getAllBanners();
+  const mockMode = isAdminPreviewMode() && !hasAdminSupabaseEnv();
+  const banners = mockMode ? getAdminPreviewBanners() : await getAllBanners();
   const count = (status: ReturnType<typeof bannerStatus>) =>
     banners.filter((banner) => bannerStatus(banner) === status).length;
   return (

@@ -25,11 +25,11 @@ const links = [
 
 export function AdminShell({
   children,
-  email,
+  accessLabel,
   previewMode,
 }: {
   children: React.ReactNode;
-  email: string;
+  accessLabel: string;
   previewMode: boolean;
 }) {
   const pathname = usePathname();
@@ -75,7 +75,7 @@ export function AdminShell({
         </nav>
         <div className="sidebar-user">
           <span className="user-role">Administrador</span>
-          <small>{email}</small>
+          <small>{accessLabel}</small>
           {!previewMode && (
             <form action={logout}>
               <button>

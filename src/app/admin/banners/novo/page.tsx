@@ -1,8 +1,8 @@
 import { BannerForm } from "@/components/banner-form";
-import { hasSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
+import { hasAdminSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
 import "../form.css";
 export default function NewBanner() {
-  const previewMode = isAdminPreviewMode() && !hasSupabaseEnv();
+  const previewMode = isAdminPreviewMode() && !hasAdminSupabaseEnv();
   return (
     <>
       <div className="page-title">

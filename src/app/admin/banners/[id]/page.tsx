@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { BannerForm } from "@/components/banner-form";
 import type { Banner } from "@/types/banner";
-import { hasSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
+import { hasAdminSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
 import { getAdminPreviewBanners } from "@/lib/admin-preview-banners";
+import { requireAdminSession } from "@/lib/admin-auth";
 import "../form.css";
 export default async function EditBanner({
   params,
@@ -11,7 +12,7 @@ export default async function EditBanner({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const mockMode = isAdminPreviewMode() && !hasSupabaseEnv();
+  const mockMode = isAdminPreviewMode() && !hasAdminSupabaseEnv();
   if (mockMode) {
     const mockBanner = getAdminPreviewBanners().find(
       (banner) => banner.id === id,
@@ -32,7 +33,8 @@ export default async function EditBanner({
       </>
     );
   }
-  const { data } = await (await createClient())
+  await requireAdminSession();
+  const { data } = await createAdminClient()
     .from("banners")
     .select("*")
     .eq("id", id)
