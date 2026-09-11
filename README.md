@@ -2,6 +2,8 @@
 
 CMS interno de banners para a Link Bio da Xingyu. A página pública lê campanhas visíveis com a chave pública do Supabase; o painel usa uma única senha administrativa, sessão assinada e operações server-side com service role.
 
+Cliques nos banners são registrados pelo próprio sistema e apresentados de forma agregada no painel, sem fingerprint ou armazenamento de IP.
+
 ## Stack
 
 - Next.js 16, React 19 e TypeScript
@@ -114,8 +116,18 @@ Use HTTPS no Nginx, encaminhe `Host`, `X-Real-IP` e `X-Forwarded-For`, e aplique
 - `src/lib/supabase/admin.ts`: cliente service role exclusivo do servidor
 - `src/app/login/actions.ts`: comparação bcrypt e rate limit de login
 - `src/app/admin/actions.ts`: mutações protegidas e uploads server-side
+- `src/app/r/[id]/route.ts`: redirecionamento transparente e registro de clique
 - `src/lib/banner-queries.ts`: consultas públicas e administrativas separadas
+- `src/lib/click-metrics.ts`: métricas agregadas e contagem por banner
 - `supabase/migrations`: schema, RLS, Storage e RPC de reordenação
+
+## Métricas de clique
+
+Banners com destino apontam para `/r/[id]`. A rota consulta o destino no banco, valida se o banner está público, registra data/hora e redireciona. A URL externa nunca é aceita pela requisição. Se somente a inserção da métrica falhar, o visitante ainda é redirecionado.
+
+A migration de métricas cria `banner_clicks` com `banner_id`, `clicked_at`, `referrer` e `user_agent`, além de índices por banner, data e banner+data. A tabela tem RLS habilitada e não permite leitura ou escrita para `anon` ou `authenticated`.
+
+O dashboard consulta uma RPC server-side que calcula hoje no fuso `America/Sao_Paulo`, períodos móveis de 7 e 30 dias, total histórico, série diária e Top 5. Gráfico e ranking podem ser alternados entre 7, 30 e 90 dias sem enviar os eventos individuais ao navegador. Banners excluídos logicamente continuam no histórico; duplicações começam sem cliques.
 
 ## Verificação
 

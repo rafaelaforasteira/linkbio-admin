@@ -49,7 +49,7 @@ export default async function Home() {
             <a
               key={banner.id}
               className="public-banner"
-              href={banner.destination_url}
+              href={`/r/${banner.id}`}
               target={banner.open_new_tab ? "_blank" : undefined}
               rel={banner.open_new_tab ? "noopener noreferrer" : undefined}
               aria-label={banner.alt_text || banner.internal_name}

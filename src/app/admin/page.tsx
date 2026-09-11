@@ -4,6 +4,10 @@ import { getAllBanners } from "@/lib/banner-queries";
 import { getAdminPreviewBanners } from "@/lib/admin-preview-banners";
 import { hasAdminSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
 import { bannerStatus, formatDate } from "@/lib/banners";
+import { ClickPerformance } from "@/components/click-performance";
+import { getClickMetrics } from "@/lib/click-metrics";
+import { getAdminPreviewMetrics } from "@/lib/admin-preview-metrics";
+import type { MetricsPeriod } from "@/types/click-metrics";
 import "./dashboard.css";
 
 const statusLabels = {
@@ -13,9 +17,19 @@ const statusLabels = {
   ended: "Encerrado",
 };
 
-export default async function Dashboard() {
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const requestedPeriod = Number((await searchParams).period);
+  const period: MetricsPeriod =
+    requestedPeriod === 7 || requestedPeriod === 90 ? requestedPeriod : 30;
   const mockMode = isAdminPreviewMode() && !hasAdminSupabaseEnv();
   const banners = mockMode ? getAdminPreviewBanners() : await getAllBanners();
+  const metrics = mockMode
+    ? getAdminPreviewMetrics(banners, period)
+    : await getClickMetrics(period);
   const count = (status: ReturnType<typeof bannerStatus>) =>
     banners.filter((banner) => bannerStatus(banner) === status).length;
   return (
@@ -48,6 +62,7 @@ export default async function Dashboard() {
           <strong>{count("ended")}</strong>
         </div>
       </section>
+      <ClickPerformance metrics={metrics} period={period} />
       <div className="section-head">
         <h2>Conteúdo recente</h2>
         <Link href="/admin/banners">

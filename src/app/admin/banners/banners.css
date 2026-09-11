@@ -162,6 +162,16 @@
 .updated {
   font-size: 0.7rem;
 }
+.click-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.74rem;
+}
+.click-count b {
+  color: var(--brand-orange);
+  font-size: 0.86rem;
+}
 .status {
   font-size: 0.68rem;
   text-transform: uppercase;

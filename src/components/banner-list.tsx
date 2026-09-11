@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Banner, BannerStatus as Status } from "@/types/banner";
+import type { BannerWithClicks } from "@/types/click-metrics";
 import { bannerStatus, formatDate } from "@/lib/banners";
 import {
   deleteBanner,
@@ -60,7 +61,7 @@ function Dialog({
   pending,
 }: {
   type: "delete" | "preview";
-  banner: Banner;
+  banner: BannerWithClicks;
   onClose: () => void;
   onConfirm?: () => void;
   pending?: boolean;
@@ -136,11 +137,11 @@ function BannerRow({
   onMockAction,
   onRestore,
 }: {
-  banner: Banner;
+  banner: BannerWithClicks;
   index: number;
   dragEnabled: boolean;
   mockMode: boolean;
-  onMockAction: (action: RowAction, banner: Banner) => void;
+  onMockAction: (action: RowAction, banner: BannerWithClicks) => void;
   onRestore: () => void;
 }) {
   const {
@@ -238,6 +239,10 @@ function BannerRow({
           <small className="updated">
             Atualizado em {formatDate(banner.updated_at)}
           </small>
+          <small className="click-count">
+            <b>{banner.click_count.toLocaleString("pt-BR")}</b>{" "}
+            {banner.click_count === 1 ? "clique" : "cliques"}
+          </small>
         </div>
         <div className="row-actions">
           <Link href={`/admin/banners/${banner.id}`}>
@@ -324,7 +329,7 @@ export function BannerList({
   initial,
   mockMode = false,
 }: {
-  initial: Banner[];
+  initial: BannerWithClicks[];
   mockMode?: boolean;
 }) {
   const [items, setItems] = useState(initial);
@@ -361,7 +366,7 @@ export function BannerList({
   );
   const dragEnabled = filter === "all" && !search;
 
-  function mockAction(action: RowAction, banner: Banner) {
+  function mockAction(action: RowAction, banner: BannerWithClicks) {
     setItems((current) => {
       if (action === "delete")
         return current.filter((item) => item.id !== banner.id);
@@ -383,6 +388,7 @@ export function BannerList({
         sort_order: current.length,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        click_count: 0,
       };
       return [...current, copy];
     });

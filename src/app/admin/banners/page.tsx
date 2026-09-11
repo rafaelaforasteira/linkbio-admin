@@ -6,11 +6,15 @@ import { BannerList } from "@/components/banner-list";
 import { SavedFeedback } from "@/components/saved-feedback";
 import { hasAdminSupabaseEnv, isAdminPreviewMode } from "@/lib/env";
 import { getAdminPreviewBanners } from "@/lib/admin-preview-banners";
+import { withAdminPreviewClicks } from "@/lib/admin-preview-metrics";
+import { addClickCounts } from "@/lib/click-metrics";
 import "./banners.css";
 
 export default async function BannersPage() {
   const mockMode = isAdminPreviewMode() && !hasAdminSupabaseEnv();
-  const banners = mockMode ? getAdminPreviewBanners() : await getAllBanners();
+  const banners = mockMode
+    ? withAdminPreviewClicks(getAdminPreviewBanners())
+    : await addClickCounts(await getAllBanners());
   return (
     <>
       <Suspense>
